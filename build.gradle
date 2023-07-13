@@ -25,3 +25,35 @@ subprojects {
 repositories {
     mavenCentral()
 }
+
+ext {
+    // Published Projects
+    publishedProjects = [
+            project(':api'),
+            project(':postgresql')
+    ]
+}
+
+//
+// Common configuration for all subprojects
+// Borrowed from: https://github.com/h2oai/sparkling-water/blob/master/build.gradle
+configure(subprojects) { project ->
+    repositories {
+        // Should be enabled only in development mode
+        if (project.hasProperty('useMavenLocal') || versionQualifier.endsWith("-SNAPSHOT")) {
+            mavenLocal()
+        }
+
+        mavenCentral()
+
+        // Public Sonatype repository
+        maven {
+            url "https://oss.sonatype.org/content/repositories/releases/"
+        }
+    }
+
+    // Publish artifacts
+    if (project in publishedProjects) {
+        apply from: "$rootDir/gradle/publish.gradle"
+    }
+}
