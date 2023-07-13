@@ -1,0 +1,74 @@
+rootProject.name = 'distributed-task-manager'
+include 'api'
+include 'common'
+include 'postgresql'
+
+// Info on Gradle Version Catalogs: https://docs.gradle.org/current/userguide/platforms.html
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+    versionCatalogs {
+        libs {
+            // Annotations
+            library('spotbugs-annotations', 'com.github.spotbugs:spotbugs-annotations:4.6.0')
+            library('jetbrains-annotations', 'org.jetbrains:annotations:20.1.0')
+
+            // Project Lombok
+            version('lombok', '1.18.22')
+            library('lombok', 'org.projectlombok','lombok').versionRef('lombok')
+
+            // Snake YAML for config files
+            library('snakeyaml','org.yaml:snakeyaml:1.29')
+
+            // Apache Commons for Pair, Triple
+            library('commons-lang3', 'org.apache.commons', 'commons-lang3').version {
+                strictly '[3.8, 4.0['
+                prefer '3.12.0'
+            }
+
+            // Google Guava for ImmutableSet
+            library('guava', 'com.google.guava:guava:31.1-jre')
+
+            // SLF4J & Loggging
+            library('slf4j-api', 'org.slf4j:slf4j-api:1.7.32')
+            library('logback-classic', 'ch.qos.logback:logback-classic:1.2.7')
+            // Janino (for Logback conditional processing)
+            library('janino', 'org.codehaus.janino:janino:3.1.9')
+
+            // micrometer for metrics
+            version('micrometer', '1.10.5')
+            library('micrometer-core', 'io.micrometer', 'micrometer-core').versionRef('micrometer')
+            library('micrometer-registry-atlas', 'io.micrometer:micrometer-registry-atlas:latest.release')
+            library('micrometer-registry-graphite', 'io.micrometer:micrometer-registry-graphite:latest.release')
+            library('micrometer-registry-prometheus', 'io.micrometer','micrometer-registry-prometheus').versionRef('micrometer')
+            library('prometheus-pushgateway', 'io.prometheus:simpleclient_pushgateway:latest.release')
+
+            // PostgreSQL
+            library('postgresql-driver', 'org.postgresql:postgresql:42.3.1')
+
+            // threeten additional Java8 Time classes
+            library('threeten-extra', 'org.threeten:threeten-extra:1.7.0')
+
+            // Resilience4j retry library for backoff algorithm
+            library('resilience4j-retry', 'io.github.resilience4j:resilience4j-retry:1.7.1')
+
+            // Java Memory Allocation Tracing
+            library('java-allocation-instrumenter', 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:3.3.2')
+
+            version('testcontainers', '1.18.3')
+            library('testcontainers', 'org.testcontainers', 'testcontainers').versionRef('testcontainers')
+            library('testcontainers-postgresql', 'org.testcontainers', 'postgresql').versionRef('testcontainers')
+            library('testcontainers-mongodb', 'org.testcontainers', 'mongodb').versionRef('testcontainers')
+            library('testcontainers-kafka', 'org.testcontainers', 'kafka').versionRef('testcontainers')
+            library('testcontainers-toxiproxy', 'org.testcontainers', 'toxiproxy').versionRef('testcontainers')
+            library('testcontainers-rabbitmq', 'org.testcontainers', 'rabbitmq').versionRef('testcontainers')
+            bundle('testcontainers', ['testcontainers-postgresql', 'testcontainers-mongodb', 'testcontainers-kafka', 'testcontainers-toxiproxy', 'testcontainers-rabbitmq'])
+
+            library('testng', 'org.testng:testng:7.4.0')
+
+            library('errorprone-core', 'com.google.errorprone:error_prone_core:2.0.2') // # was using def in gradle files
+        }
+    }
+}
+

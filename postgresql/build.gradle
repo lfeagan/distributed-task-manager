@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+//    id "edu.sc.seis.version-class"
+}
+
+dependencies {
+    implementation project(':api')
+    implementation(libs.lombok)
+    annotationProcessor(libs.lombok)
+
+    // PostgreSQL
+    api(libs.postgresql.driver)
+    implementation(libs.jetbrains.annotations)
+
+    // PeriodDuration
+    implementation(libs.threeten.extra)
+
+    // Pair
+    implementation(libs.commons.lang3)
+    // Joiner
+    implementation(libs.guava)
+
+    // Logging
+    implementation(libs.slf4j.api)
+    implementation(libs.micrometer.core)
+
+    testImplementation(libs.testng)
+    testImplementation(libs.testcontainers)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.toxiproxy)
+}
+
+test {
+    useTestNG()
+}

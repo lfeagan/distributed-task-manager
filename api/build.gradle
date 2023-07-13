@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+//    id "edu.sc.seis.version-class"
+}
+
+dependencies {
+    implementation(libs.lombok)
+    annotationProcessor(libs.lombok)
+
+    implementation(libs.jetbrains.annotations)
+
+    // PeriodDuration
+    implementation(libs.threeten.extra)
+
+    // Logging
+    implementation(libs.slf4j.api)
+    implementation(libs.micrometer.core)
+}
+
+test {
+    useTestNG()
+}
