@@ -1,11 +1,12 @@
+apply plugin: 'java'
 apply plugin: 'maven-publish'
-apply plugin: 'signing'
+//apply plugin: 'signing'
 
 publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/octocat/hello-world"
+            url = "https://maven.pkg.github.com/lfeagan/distributed-task-manager"
             credentials {
                 username = System.getenv("GITHUB_ACTOR")
                 password = System.getenv("GITHUB_TOKEN")
@@ -14,16 +15,89 @@ publishing {
     }
 }
 
-configurations.archives.artifacts.clear()
+jar {
+    from(rootProject.projectDir) {
+        include "LICENSE"
+        into "META-INF"
+    }
+}
 
-subprojects
-        .findAll { notPublishableModules.contains(it.path) }
-        .each { subproject ->
-            configurations.archives.artifacts.clear()
-        }
+task javadocJar(type: Jar) {
+    from javadoc
+    archiveClassifier = 'javadoc'
+}
 
-subprojects
-        .findAll { !notPublishableModules.contains(it.path) }
-        .each { subproject ->
-            subproject.apply from: "${rootDir}/gradle/publish-project.gradle"
+task sourcesJar(type: Jar) {
+    from sourceSets.main.allJava
+    archiveClassifier = 'sources'
+}
+
+// Sonatype does not support Gradle Module Metadata
+// See: https://discuss.gradle.org/t/unable-to-publish-artifact-to-mavencentral/33727/3
+tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = archivesBaseName
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
+
+            pom {
+                name = archivesBaseName
+                description = project.description ?: rootProject.description
+                url = 'https://github.com/lfeagan/distributed-task-manager'
+                organization {
+                    name = "lfeagan"
+                    url = "https://vectorcomputing.net"
+                }
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'lfeagan'
+                        name = 'Lance Feagan'
+                        email = '<given_initial><family_name>@hotmail.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git@github.com:lfeagan/distributed-task-manager.git'
+                    developerConnection = 'scm:git@github.com:lfeagan/distributed-task-manager.git'
+                    url = 'https://github.com/lfeagan/distributed-task-manager'
+                }
+                issueManagement {
+                    system = "GitHub"
+                    url = "https://github.com/lfeagan/distributed-task-manager/issues"
+                }
+            }
         }
+    }
+}
+
+//signing {
+//    if (System.getenv('SIGNING_KEY') && System.getenv('SIGNING_PASSWORD')) {
+//        useInMemoryPgpKeys(System.getenv('SIGNING_KEY'), System.getenv('SIGNING_PASSWORD'))
+//    }
+//    sign publishing.publications.mavenJava
+//}

@@ -17,6 +17,11 @@ plugins {
     id "edu.sc.seis.version-class" version "1.2.2"
 }
 
+allprojects {
+    group = 'net.vectorcomputing'
+}
+
+
 subprojects {
     // Adds a version qualifier to the end of the version (i.e. SNAPSHOT, RC)
     project.version += rootProject.hasProperty('versionQualifier') ? '-' + rootProject.property('versionQualifier') : ''
