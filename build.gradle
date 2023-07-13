@@ -18,9 +18,8 @@ plugins {
 }
 
 allprojects {
-    group = 'net.vectorcomputing'
+    group = 'com.github.lfeagan'
 }
-
 
 subprojects {
     // Adds a version qualifier to the end of the version (i.e. SNAPSHOT, RC)
