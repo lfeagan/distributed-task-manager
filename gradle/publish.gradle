@@ -2,19 +2,6 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 //apply plugin: 'signing'
 
-publishing {
-    repositories {
-        maven {
-            name = "GitHubPackages"
-            url = "https://maven.pkg.github.com/lfeagan/distributed-task-manager"
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
-            }
-        }
-    }
-}
-
 jar {
     from(rootProject.projectDir) {
         include "LICENSE"
@@ -44,6 +31,16 @@ artifacts {
 }
 
 publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = "https://maven.pkg.github.com/lfeagan/distributed-task-manager"
+            credentials {
+                username = System.getenv("GITHUB_ACTOR")
+                password = System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
     publications {
         mavenJava(MavenPublication) {
             artifactId = archivesBaseName
