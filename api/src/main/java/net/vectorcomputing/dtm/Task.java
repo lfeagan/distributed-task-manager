@@ -48,18 +48,18 @@ public interface Task extends Closeable {
     boolean isAcquired();
 
     /**
-     * Sets the task status to complete.
+     * Sets the task status to COMPLETED.
      * Can include an optional message.
      * @param message
      */
-    void complete(String message);
+    void completed(String message);
 
     /**
-     * Sets the task status to failure.
+     * Sets the task status to FAILED.
      * Can include an optional message.
      * @param message
      */
-    void failure(String message);
+    void failed(String message);
 
     /**
      * Sets the task status to SKIP.

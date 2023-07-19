@@ -95,7 +95,7 @@ public class PostgresqlTask implements Task {
     }
 
     @Override
-    public synchronized void complete(String message) {
+    public synchronized void completed(String message) {
         if (!isAcquired()) {
             throw new IllegalStateException("Lock must be acquired before trying to complete");
         }
@@ -105,7 +105,7 @@ public class PostgresqlTask implements Task {
             // and the lock on the task has already been acquired
             final Instant now = Instant.now();
             pstmt = this.conn.prepareStatement(ptm.sqlBuilder.updateStatusMessageCompletedAt());
-            pstmt.setString(1, TaskStatus.COMPLETE.name());
+            pstmt.setString(1, TaskStatus.COMPLETED.name());
             pstmt.setTimestamp(2,Timestamp.from(now));
             if (message == null) {
                 pstmt.setNull(3, Types.CLOB);
@@ -130,7 +130,7 @@ public class PostgresqlTask implements Task {
     }
 
     @Override
-    public synchronized void failure(String message) {
+    public synchronized void failed(String message) {
         if (!isAcquired()) {
             throw new IllegalStateException("Lock must be acquired before trying to fail");
         }
@@ -139,7 +139,7 @@ public class PostgresqlTask implements Task {
             // this.conn is already has auto-commit set to false
             // and the lock on the task has already been acquired
             pstmt = this.conn.prepareStatement(ptm.sqlBuilder.updateStatusAndMessage());
-            pstmt.setString(1, TaskStatus.FAILURE.name());
+            pstmt.setString(1, TaskStatus.FAILED.name());
             if (message == null) {
                 pstmt.setNull(2, Types.CLOB);
             } else {

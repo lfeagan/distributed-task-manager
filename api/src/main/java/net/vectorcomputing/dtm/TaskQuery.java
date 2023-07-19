@@ -9,7 +9,6 @@ import java.util.Set;
 @Data
 @Builder
 public class TaskQuery {
-
     private String name;
     private Instant bucketStartTime;
     private Instant bucketEndTime;

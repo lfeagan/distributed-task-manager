@@ -75,7 +75,7 @@ public class PostgresqlTaskManager implements TaskManager {
             if (e.getSQLState().equals("23505")) {
 //                throw new DuplicateKeyException()
                 String message = MessageFormat.format("Task with name {0} and bucket_time {1} already exists", name, bucketTime);
-                throw new RuntimeException(message);
+                throw new RuntimeException(message, e);
             }
             throw new RuntimeException("Unable to create task", e);
         } finally {
@@ -95,10 +95,10 @@ public class PostgresqlTaskManager implements TaskManager {
             conn.setAutoCommit(false);
             pstmt = conn.prepareStatement(sql);
             resultSet = pstmt.executeQuery();
-            List<Task> tasks = new ArrayList<>();
             if (resultSet.next()) {
                 return currentRowToTask(resultSet, conn);
             } else {
+                closeWithoutException(conn);
                 return null;
             }
         } catch (Exception e) {
@@ -156,7 +156,7 @@ public class PostgresqlTaskManager implements TaskManager {
         taskBuilder.bucketTime(resultSet.getTimestamp(2).toInstant());
         Object o = resultSet.getObject(3);
         if (o instanceof PGInterval) {
-            taskBuilder.bucketInterval( TimeUtils.periodDurationFromPGInterval((PGInterval)o));
+            taskBuilder.bucketInterval( PostgresqlTimeUtils.periodDurationFromPGInterval((PGInterval)o));
         }
         taskBuilder.status(TaskStatus.valueOf(resultSet.getString(4)));
         taskBuilder.acquiredBy(resultSet.getString(5));

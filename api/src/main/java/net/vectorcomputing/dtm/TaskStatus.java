@@ -3,12 +3,12 @@ package net.vectorcomputing.dtm;
 public enum TaskStatus {
     CREATED, // The value assigned when a task is created.
     RUNNING, // The value assigned when a task has been selected and is running.
-    COMPLETE, // The value assigned when a task has finished without error and should not be processed again.
-    FAILURE, // The value assigned when a task has finished with error(s) and is a candidate for running again.
+    COMPLETED, // The value assigned when a task has finished without error and should not be processed again.
+    FAILED, // The value assigned when a task has finished with error(s) and is a candidate for running again.
     SKIP; // A manually assigned value indicated that this task should not be processed
 
         /* Task State Transition Diagram
-       CREATED --> RUNNING --> (COMPLETE|FAILURE)
+       CREATED --> RUNNING --> (COMPLETED|FAILED)
                      /\                |
                      |                 |
                      \-----------------/

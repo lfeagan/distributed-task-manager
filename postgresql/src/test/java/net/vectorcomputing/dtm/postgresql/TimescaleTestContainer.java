@@ -80,6 +80,7 @@ public class TimescaleTestContainer {
         }
 
         timescaleContainer = (JdbcDatabaseContainer) new PostgreSQLContainer(TIMESCALEDB_IMAGE.withTag(timescaleImageTag))
+                .withCommand("postgres", "-N", "20")
                 .withNetworkAliases("timescaledb");
         if (dbInitScriptPath != null) {
             timescaleContainer.withInitScript(dbInitScriptPath);

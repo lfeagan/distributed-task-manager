@@ -15,6 +15,12 @@ dependencies {
     // Logging
     implementation(libs.slf4j.api)
     implementation(libs.micrometer.core)
+
+    // PeriodDuration
+    api(libs.threeten.extra)
+
+    // Pair
+    api(libs.commons.lang3)
 }
 
 test {

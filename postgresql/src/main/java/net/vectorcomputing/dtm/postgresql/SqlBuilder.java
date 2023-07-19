@@ -173,16 +173,16 @@ public class SqlBuilder {
             predicates.add("name='" + taskQuery.getName() + "'");
         }
         if (taskQuery.getBucketStartTime() != null) {
-            predicates.add("bucket_time >= '" + TimeUtils.toPostgresqlTimestampWithTz(taskQuery.getBucketStartTime()) + "'::TIMESTAMPTZ");
+            predicates.add("bucket_time >= '" + PostgresqlTimeUtils.toPostgresqlTimestampWithTz(taskQuery.getBucketStartTime()) + "'::TIMESTAMPTZ");
         }
         if (taskQuery.getBucketEndTime() != null) {
-            predicates.add("bucket_time < '" + TimeUtils.toPostgresqlTimestampWithTz(taskQuery.getBucketEndTime()) + "'::TIMESTAMPTZ");
+            predicates.add("bucket_time < '" + PostgresqlTimeUtils.toPostgresqlTimestampWithTz(taskQuery.getBucketEndTime()) + "'::TIMESTAMPTZ");
         }
         if (taskQuery.getAcquiredAtStartTime() != null) {
-            predicates.add("acquired_at >= '" + TimeUtils.toPostgresqlTimestampWithTz(taskQuery.getAcquiredAtStartTime()) + "'::TIMESTAMPTZ");
+            predicates.add("acquired_at >= '" + PostgresqlTimeUtils.toPostgresqlTimestampWithTz(taskQuery.getAcquiredAtStartTime()) + "'::TIMESTAMPTZ");
         }
         if (taskQuery.getAcquiredAtEndTime() != null) {
-            predicates.add("acquired_at < '" + TimeUtils.toPostgresqlTimestampWithTz(taskQuery.getAcquiredAtEndTime()) + "'::TIMESTAMPTZ");
+            predicates.add("acquired_at < '" + PostgresqlTimeUtils.toPostgresqlTimestampWithTz(taskQuery.getAcquiredAtEndTime()) + "'::TIMESTAMPTZ");
         }
         if (taskQuery.getStatuses() != null && !taskQuery.getStatuses().isEmpty()) {
             List<String> status_predicates = new ArrayList<String>();
