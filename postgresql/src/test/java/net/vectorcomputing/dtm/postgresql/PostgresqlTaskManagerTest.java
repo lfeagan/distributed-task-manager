@@ -32,9 +32,10 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    public void createAndGet() {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
-      PeriodDuration bucket_interval = PeriodDuration.of(Duration.ofMinutes(5));
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), bucket_interval);
-      Task task1 = ptm.createTask("createAndGet", bucket_time, bucket_interval);
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      String taskName = "createAndGet";
+      Task task1 = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), taskName);
       System.out.println("wrote: " + task1);
       task1.acquire("createAndGetTest");
       Assert.assertTrue(task1.isAcquired());
@@ -52,11 +53,11 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       final String taskName = "acquiredViaQuery";
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
-      PeriodDuration bucket_interval = PeriodDuration.of(Duration.ofMinutes(5));
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), bucket_interval);
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
       List<Task> createdTasks = new ArrayList<>(numTasks);
       for (int i=0; i < numTasks; ++i) {
-         createdTasks.add(ptm.createTask(taskName, bucket_time.plus(bucket_interval.multipliedBy(i)), bucket_interval));
+         createdTasks.add(ptm.createTask(taskName, bucket_time.plus(bucket_interval.multipliedBy(i)), PeriodDuration.of(bucket_interval), taskName));
       }
       Assert.assertEquals(createdTasks.size(), numTasks, "created task count");
 
@@ -79,9 +80,10 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    public void createAndSkip() {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
-      PeriodDuration bucket_interval = PeriodDuration.of(Duration.ofMinutes(5));
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), bucket_interval);
-      Task skipTask = ptm.createTask("skipMe", bucket_time, bucket_interval);
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      final String taskName = "skipMe";
+      Task skipTask = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), "createAndSkip");
       try {
          skipTask.skip("skipping for test");
          Assert.fail("didn't get exception");
@@ -102,12 +104,12 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    public void doubleCreate() {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
-      PeriodDuration bucket_interval = PeriodDuration.of(Duration.ofMinutes(5));
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), bucket_interval);
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
 
-      Task first = ptm.createTask("doubleCreate", bucket_time, bucket_interval);
+      Task first = ptm.createTask("doubleCreate", bucket_time, PeriodDuration.of(bucket_interval), "doubleCreate");
       try {
-         Task second = ptm.createTask("doubleCreate", bucket_time, bucket_interval);
+         Task second = ptm.createTask("doubleCreate", bucket_time, PeriodDuration.of(bucket_interval), "doubleCreate");
          Assert.fail("made two");
       } catch (RuntimeException e) {
          // do nothing
@@ -123,6 +125,50 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
+   public void multiAssignStatus() {
+      PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
+      ptm.initialize();
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      int bucket_count = 10;
+      // create 10 tasks
+      final String taskName = "multiAssignStatus";
+      final List<Task> createdTasks = TaskManagerUtils.createTasksInTimeRange(ptm, taskName,  bucket_time, PeriodDuration.of(bucket_interval), bucket_count, taskName+"_create");
+      Assert.assertEquals(createdTasks.size(), bucket_count);
+      // verify all have status created
+      for (Task task : createdTasks) {
+         Assert.assertEquals(task.getStatus(), TaskStatus.CREATED);
+      }
+
+      // change all to status running
+      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.RUNNING, taskName + "_test");
+      final List<Task> runningTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
+      // verify all have status running
+      for (Task task : runningTasks) {
+         Assert.assertEquals(task.getStatus(), TaskStatus.RUNNING);
+      }
+      Task randomTask = runningTasks.get(ThreadLocalRandom.current().nextInt(bucket_count));
+      Assert.assertFalse(randomTask.isAcquired());
+      randomTask.acquire(taskName + "_randomTask");
+
+      // attempt to mark everything failed
+      try {
+         ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.FAILED, taskName + "_failAll");
+         Assert.fail("we shouldn't have been able to acquire the lock");
+      } catch (RuntimeException e) {
+         // do nothing
+      }
+
+      randomTask.completed("done");
+      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.FAILED, taskName + "_failAll");
+
+      final List<Task> failedTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
+      for (Task task : failedTasks) {
+         Assert.assertEquals(task.getStatus(), TaskStatus.FAILED);
+      }
+   }
+
+   @Test
    public void parallelCreate() {
       // create N threads
       // each thread will attempt to M items
@@ -132,13 +178,13 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       final String taskName = "parallelCreate";
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
-      PeriodDuration bucket_interval = PeriodDuration.of(Duration.ofMinutes(5));
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), bucket_interval);
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
       final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
       {
          final List<Future<List<Task>>> creationFutures = new ArrayList<>();
          for (int i = 0; i < numThreads; ++i) {
-            TaskCreationWorker worker = new TaskCreationWorker(ptm, numTasks, taskName, bucket_time, bucket_interval);
+            TaskCreationWorker worker = new TaskCreationWorker(ptm, numTasks, taskName, bucket_time, PeriodDuration.of(bucket_interval));
             creationFutures.add(executorService.submit(worker));
          }
 
@@ -204,7 +250,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
          List<Task> createdTasks = new ArrayList<>(numTasks);
          for (int i=0; i < numTasks; ++i) {
             try {
-               createdTasks.add(taskManager.createTask(taskName, bucket_time.plus(bucket_interval.multipliedBy(i)), bucket_interval));
+               createdTasks.add(taskManager.createTask(taskName, bucket_time.plus(bucket_interval.multipliedBy(i)), bucket_interval, "taskCreationWorker"));
             } catch (Exception e) {
                // do nothing
             }
@@ -218,9 +264,9 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       private final int numTasks;
       private final String taskName;
       private final Instant bucket_time;
-      private final PeriodDuration bucket_interval;
+      private final Duration bucket_interval;
 
-      public TaskCompletionWorker(TaskManager taskManager, int numTasks, String taskName, Instant bucket_time, PeriodDuration bucket_interval) {
+      public TaskCompletionWorker(TaskManager taskManager, int numTasks, String taskName, Instant bucket_time, Duration bucket_interval) {
          this.taskManager = taskManager;
          this.numTasks = numTasks;
          this.taskName = taskName;

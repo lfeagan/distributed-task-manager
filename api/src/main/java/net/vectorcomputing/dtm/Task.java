@@ -26,6 +26,18 @@ public interface Task extends Closeable {
     PeriodDuration getBucketInterval();
 
     /**
+     * An identifier used to help track who created this task.
+     * @return
+     */
+    String getCreatedBy();
+
+    /**
+     * The time this task was created.
+     * @return
+     */
+    Instant getCreatedAt();
+
+    /**
      * An identifier used to help track who acquired this task.
      * @return
      */
@@ -53,6 +65,8 @@ public interface Task extends Closeable {
      * @param message
      */
     void completed(String message);
+
+    Instant getCompletedAt();
 
     /**
      * Sets the task status to FAILED.

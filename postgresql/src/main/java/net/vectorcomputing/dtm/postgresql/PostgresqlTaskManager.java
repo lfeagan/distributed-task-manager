@@ -15,6 +15,7 @@ import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import static net.vectorcomputing.dtm.postgresql.JdbcUtils.closeWithoutException;
 
@@ -50,7 +51,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval) {
+    public Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy) {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -62,6 +63,8 @@ public class PostgresqlTaskManager implements TaskManager {
             org.postgresql.util.PGInterval interval = new PGInterval(bucketInterval.toString());
             pstmt.setObject(3, interval);
             pstmt.setString(4, TaskStatus.CREATED.name());
+            pstmt.setString(5, createdBy);
+            pstmt.setTimestamp(6, java.sql.Timestamp.from(Instant.now()));
             pstmt.executeUpdate();
             conn.commit();
             return PostgresqlTask.builder()
@@ -159,8 +162,10 @@ public class PostgresqlTaskManager implements TaskManager {
             taskBuilder.bucketInterval( PostgresqlTimeUtils.periodDurationFromPGInterval((PGInterval)o));
         }
         taskBuilder.status(TaskStatus.valueOf(resultSet.getString(4)));
-        taskBuilder.acquiredBy(resultSet.getString(5));
-        taskBuilder.acquiredAt(resultSet.getTimestamp(6) == null ? null : resultSet.getTimestamp(6).toInstant());
+        taskBuilder.createdBy(resultSet.getString(5));
+        taskBuilder.createdAt(resultSet.getTimestamp(6).toInstant());
+        taskBuilder.acquiredBy(resultSet.getString(7));
+        taskBuilder.acquiredAt(resultSet.getTimestamp(8) == null ? null : resultSet.getTimestamp(8).toInstant());
         taskBuilder.ptm(this);
         if (conn != null) {
             taskBuilder.conn(conn);
@@ -190,6 +195,41 @@ public class PostgresqlTaskManager implements TaskManager {
         } finally {
             closeWithoutException(resultSet);
             closeWithoutException(pstmt);
+            closeWithoutException(conn);
+        }
+    }
+
+    @Override
+    public void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy) {
+        if (tasks.stream().filter(t -> t.isAcquired()).count() > 0) {
+            throw new IllegalArgumentException("Cannot call set task status on tasks that are already acquired");
+        }
+        Connection conn = null;
+        Statement stmt = null;
+        ResultSet resultSet = null;
+        final String sql = sqlBuilder.selectTasks(tasks) + " FOR UPDATE NOWAIT";
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+            stmt = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            resultSet = stmt.executeQuery(sql);
+            while (resultSet.next()) {
+                resultSet.updateString("status", updatedStatus.name());
+                resultSet.updateTimestamp("acquired_at", java.sql.Timestamp.from(Instant.now()));
+                resultSet.updateString("acquired_by", acquiredBy);
+                resultSet.updateRow();
+            }
+            conn.commit();
+        } catch (SQLException e) {
+            if (e.getSQLState().equals("")) {
+
+            } else {
+                String message = MessageFormat.format("Unable to get tasks for query {0}", sql);
+                throw new RuntimeException(message, e);
+            }
+        } finally {
+            closeWithoutException(resultSet);
+            closeWithoutException(stmt);
             closeWithoutException(conn);
         }
     }

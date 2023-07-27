@@ -32,6 +32,8 @@ public class PostgresqlTask implements Task {
     @NonNull
     private final PeriodDuration bucketInterval;
 
+    private String createdBy;
+    private Instant createdAt;
     private String acquiredBy;
     private Instant acquiredAt;
     private Instant completedAt;
@@ -44,6 +46,16 @@ public class PostgresqlTask implements Task {
 
     @Builder.Default
     private int exceptionCount = 0;
+
+    @Override
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    @Override
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 
     @Override
     public synchronized void acquire(String acquiredBy) {
@@ -80,6 +92,7 @@ public class PostgresqlTask implements Task {
         } catch (SQLException e) {
             // if we failed to acquire, close the connection
             closeWithoutException(this.conn);
+            this.conn = null;
             String message = MessageFormat.format("Unable to acquire lock on task name {0} bucket time {1}", name, bucketTime);
             throw new RuntimeException(message, e);
         } finally {
@@ -127,6 +140,11 @@ public class PostgresqlTask implements Task {
             closeWithoutException(conn);
             this.conn = null;
         }
+    }
+
+    @Override
+    public Instant getCompletedAt() {
+        return this.completedAt;
     }
 
     @Override

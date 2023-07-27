@@ -4,6 +4,7 @@ import org.threeten.extra.PeriodDuration;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 public interface TaskManager {
 
@@ -17,7 +18,7 @@ public interface TaskManager {
      * @param bucketInterval
      * @return
      */
-    Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval);
+    Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy);
 
     /**
      * Searches the table of tasks and returns the first task that satisfies the query conditions
@@ -29,7 +30,16 @@ public interface TaskManager {
 
     Task getTask(String name, Instant bucketTime);
 
-    public List<Task> getTasks(TaskQuery taskQuery);
+    List<Task> getTasks(TaskQuery taskQuery);
+
+    /**
+     * Atomically assign the specified task status to a set of tasks.
+     * @param tasks
+     * @param updatedStatus
+     * @param acquiredBy the name to use when identifying the lock acquirer for the update
+     */
+    void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy);
+
 
 //    /**
 //     * Marks the specified task status as RUNNING.

@@ -1,20 +1,16 @@
 package net.vectorcomputing.dtm.postgresql;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.postgresql.util.PGInterval;
 import org.threeten.extra.PeriodDuration;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoUnit;
 import java.util.Locale;
 
-import static net.vectorcomputing.dtm.TimeUtils.ISO_LOCAL_TIME_MILLIS;
-import static net.vectorcomputing.dtm.TimeUtils.NANOS_PER_SECOND;
+import static net.vectorcomputing.dtm.TimeUtils.*;
 
 public class PostgresqlTimeUtils {
 
@@ -78,7 +74,7 @@ public class PostgresqlTimeUtils {
                 "'%d hours %d mins %s secs'::INTERVAL",
                 duration.toHoursPart(), // hours
                 duration.toMinutesPart(),
-                df.format(duration.toSecondsPart() + duration.getNano() / NANOS_PER_SECOND)
+                df.format(duration.toSecondsPart() + duration.getNano() / DOUBLE_NANOS_PER_SECOND)
         );
     }
 
@@ -99,7 +95,7 @@ public class PostgresqlTimeUtils {
         }
         if (duration.toSecondsPart() != 0 || duration.getNano() != 0) {
             sb.append(String.format("%s secs",
-                    df.format(duration.toSecondsPart() + duration.getNano() / NANOS_PER_SECOND)));
+                    df.format(duration.toSecondsPart() + duration.getNano() / DOUBLE_NANOS_PER_SECOND)));
         }
 
         sb.append("'::INTERVAL");
@@ -122,7 +118,7 @@ public class PostgresqlTimeUtils {
                 pd.getPeriod().getDays(),
                 pd.getDuration().toHoursPart(), // hours
                 pd.getDuration().toMinutesPart(),
-                df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / NANOS_PER_SECOND)
+                df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / DOUBLE_NANOS_PER_SECOND)
         );
     }
 
@@ -152,7 +148,7 @@ public class PostgresqlTimeUtils {
         }
         if (pd.getDuration().toSecondsPart() != 0 || pd.getDuration().getNano() != 0) {
             sb.append(String.format("%s secs",
-                    df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / NANOS_PER_SECOND)));
+                    df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / DOUBLE_NANOS_PER_SECOND)));
         }
 
         sb.append("'::INTERVAL");

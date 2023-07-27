@@ -21,6 +21,8 @@ dependencies {
 
     // Pair
     api(libs.commons.lang3)
+
+    testImplementation(libs.testng)
 }
 
 test {

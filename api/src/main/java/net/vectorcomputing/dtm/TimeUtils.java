@@ -8,6 +8,7 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 
 import static java.time.temporal.ChronoField.*;
 import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
@@ -20,7 +21,8 @@ public final class TimeUtils {
     public static final double SECONDS_IN_YEAR = DAYS_IN_YEAR * SECONDS_PER_DAY;
     public static final double SECONDS_IN_MONTH = SECONDS_IN_YEAR / 12.0;
 
-    public static final double NANOS_PER_SECOND = 1000000000.0;
+    public static final double DOUBLE_NANOS_PER_SECOND = 1000000000.0;
+    public static final long LONG_NANOS_PER_SECOND = 1000000000L;
 
     public static final DateTimeFormatter ISO_LOCAL_TIME_MILLIS = new DateTimeFormatterBuilder()
             .appendValue(HOUR_OF_DAY, 2)
@@ -33,39 +35,78 @@ public final class TimeUtils {
             .appendFraction(MILLI_OF_SECOND, 0, 3, true)
             .toFormatter();
 
-    public static Instant alignWithDuration(Instant timestamp, PeriodDuration periodDuration) {
-        return computeBucketStartAndEnd(timestamp, Instant.ofEpochMilli(0), periodDuration).getLeft();
+    public static Instant instantFromRFC3339(String dateTime) {
+        return Instant.from(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(dateTime));
     }
 
     /**
-     *
-     * @param timestamp in epoch millis
-     * @param windowOrigin in epoch millis
-     * @param windowSize in millis
+     * Aligns the specified timestamp with the nearest period-duration interval integrally offset from the origin time.
+     * Minimum supported precision is milliseconds.
+     * @param timestamp
+     * @param origin
+     * @param interval
      * @return
      */
-    public static Pair<Instant, Instant> computeBucketStartAndEnd(Instant timestamp, Instant windowOrigin, PeriodDuration windowSize) {
-        // buckets must be second aligned, cannot be less than one second
-        timestamp = timestamp.truncatedTo(ChronoUnit.SECONDS);
-        windowOrigin = windowOrigin.truncatedTo(ChronoUnit.SECONDS);
-//        int offsetSeconds = (int) windowOrigin.until(timestamp, ChronoUnit.SECONDS);
-//        Seconds offsetFromOrigin = Seconds.of(offsetSeconds);
-//        Seconds intervals = offsetFromOrigin.dividedBy(windowSize.abs().getAmount());
-        long delta_t = timestamp.getEpochSecond() - windowOrigin.getEpochSecond();
-        int interval = (int) (delta_t / toSeconds(windowSize));
+    public static Instant alignWithDuration(Instant timestamp, final Instant origin, final Duration interval) {
+        Objects.requireNonNull(timestamp, "timestamp must be specified");
+        Objects.requireNonNull(origin, "origin must be specified");
+        Objects.requireNonNull(interval, "interval must be specified");
 
-        LocalDateTime start = LocalDateTime.ofInstant(windowOrigin, ZoneId.of("UTC"));
-        if (delta_t < 0) {
-            interval += 1;
-            for (int i=0; i < interval; ++i) {
-                start = start.minus(windowSize);
-            }
-        } else {
-            start = start.plus(windowSize.multipliedBy(interval));
+        // handle trivial case
+        if (origin.equals(timestamp)) {
+            return timestamp;
         }
 
-        Instant end = start.plus(windowSize).toInstant(ZoneOffset.UTC);
-        return Pair.of(start.toInstant(ZoneOffset.UTC), end);
+        long delta_t = timestamp.toEpochMilli() - origin.toEpochMilli();
+        long estimated_beats = (long) (delta_t / toSeconds(interval).multiply(BigDecimal.valueOf(1000)).longValue());
+
+        Instant alignedTime = origin;
+        // determine if we need to move forwards or backwards in time from the origin
+        if (timestamp.isBefore(origin)) {
+            while (alignedTime.isAfter(timestamp)) {
+                alignedTime = alignedTime.minus(interval);
+            }
+        } else {
+            alignedTime = alignedTime.plus(interval.multipliedBy(estimated_beats-1));
+            while (alignedTime.isBefore(timestamp)) {
+                alignedTime = alignedTime.plus(interval);
+            }
+            if (alignedTime.equals(timestamp)) {
+                return alignedTime;
+            } else {
+                // move back one interval
+                alignedTime = alignedTime.minus(interval);
+            }
+        }
+        return alignedTime;
+    }
+
+
+    public static Instant alignWithDuration(Instant timestamp, final Instant origin, final Period interval, ZoneId timeZone) {
+        Objects.requireNonNull(timestamp, "timestamp must be specified");
+        Objects.requireNonNull(origin, "origin must be specified");
+        Objects.requireNonNull(interval, "interval must be specified");
+
+        // handle trivial case
+        if (origin.equals(timestamp)) {
+            return timestamp;
+        }
+
+        ZonedDateTime zonedTimestamp = ZonedDateTime.ofInstant(timestamp, timeZone);
+        ZonedDateTime alignedTime = ZonedDateTime.ofInstant(origin, timeZone);
+        // determine if we need to move forwards or backwards in time from the origin
+        if (timestamp.isBefore(origin)) {
+            while (alignedTime.isAfter(zonedTimestamp)) {
+                alignedTime = alignedTime.minus(interval);
+            }
+        } else {
+            while (alignedTime.isBefore(zonedTimestamp)) {
+                alignedTime = alignedTime.plus(interval);
+            }
+            // move back one interval
+            alignedTime = alignedTime.minus(interval);
+        }
+        return alignedTime.toInstant();
     }
 
     /**
@@ -76,28 +117,39 @@ public final class TimeUtils {
      * @param pd
      * @return
      */
-    public static long toSeconds(PeriodDuration pd) {
+    public static BigDecimal toSeconds(PeriodDuration pd) {
+        BigDecimal period_seconds = toSeconds(pd.getPeriod());
+        BigDecimal duration_seconds = toSeconds(pd.getDuration());
+        return period_seconds.add(duration_seconds);
+    }
+
+    public static BigDecimal toSeconds(Period period) {
         BigDecimal period_seconds = BigDecimal.ZERO;
-        if (!pd.getPeriod().equals(Period.ZERO)) {
-            int years = pd.getPeriod().getYears();
+        if (!period.equals(Period.ZERO)) {
+            int years = period.getYears();
             if (years != 0) {
                 period_seconds = BigDecimal.valueOf(years)
                         .multiply(BigDecimal.valueOf(SECONDS_IN_YEAR));
             }
-            int months = pd.getPeriod().getMonths();
+            int months = period.getMonths();
             if (months != 0) {
                 period_seconds = period_seconds
                         .add(BigDecimal.valueOf(months)
                                 .multiply(BigDecimal.valueOf(SECONDS_IN_MONTH)));
             }
-            int days = pd.getPeriod().getDays();
+            int days = period.getDays();
             if (days != 0) {
                 period_seconds = period_seconds
                         .add(BigDecimal.valueOf(days)
                                 .multiply(BigDecimal.valueOf(SECONDS_PER_DAY)));
             }
         }
-        BigDecimal seconds = period_seconds.add(BigDecimal.valueOf(pd.getDuration().toMillis()/1000));
-        return seconds.longValue();
+        return period_seconds;
+    }
+
+    public static BigDecimal toSeconds(Duration duration) {
+        BigDecimal duration_seconds = BigDecimal.valueOf(duration.toNanos());
+        duration_seconds.divide(BigDecimal.valueOf(LONG_NANOS_PER_SECOND));
+        return duration_seconds;
     }
 }

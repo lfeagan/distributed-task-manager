@@ -3,18 +3,20 @@ package net.vectorcomputing.dtm.postgresql;
 import com.google.common.base.Joiner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import net.vectorcomputing.dtm.Task;
 import net.vectorcomputing.dtm.TaskQuery;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Builder
 @AllArgsConstructor
 public class SqlBuilder {
 
-    private static final String ALL_COLUMNS = "name, bucket_time, bucket_interval, status, acquired_by, acquired_at, completed_at, message";
-    private static final String MINIMAL_COLUMNS = "name, bucket_time, bucket_interval, status";
+    private static final String ALL_COLUMNS = "name, bucket_time, bucket_interval, status, created_by, created_at, acquired_by, acquired_at, completed_at, message";
+    private static final String MINIMAL_COLUMNS = "name, bucket_time, bucket_interval, status, created_by, created_at";
 
     /**
      * The table name. Can be a one-, two-, or three-part name.
@@ -54,6 +56,8 @@ public class SqlBuilder {
                 + "bucket_time TIMESTAMPTZ NOT NULL, "
                 + "bucket_interval INTERVAL NOT NULL, "
                 + "status VARCHAR(16) NOT NULL, "
+                + "created_by VARCHAR("+ idLength +") NOT NULL, "
+                + "created_at TIMESTAMPTZ NOT NULL, "
                 + "acquired_by VARCHAR("+ idLength +"), "
                 + "acquired_at TIMESTAMPTZ, "
                 + "completed_at TIMESTAMPTZ, "
@@ -76,7 +80,7 @@ public class SqlBuilder {
         sb.append(tableName);
         sb.append(" (");
         sb.append(MINIMAL_COLUMNS);
-        sb.append(") VALUES (?,?,?,?)");
+        sb.append(") VALUES (?,?,?,?,?,?)");
         return sb.toString();
     }
 
@@ -166,7 +170,6 @@ public class SqlBuilder {
         sb.append(ALL_COLUMNS);
         sb.append(" FROM ");
         sb.append(tableName);
-        sb.append(" WHERE ");
         List<String> predicates = new ArrayList<>();
 
         if (taskQuery.getName() != null) {
@@ -189,8 +192,30 @@ public class SqlBuilder {
             taskQuery.getStatuses().stream().forEach(s -> status_predicates.add(" status = '" + s.name() + "'"));
             predicates.add("(" + Joiner.on(" OR ").join(status_predicates) + ")");
         }
-        sb.append(Joiner.on(" AND ").join(predicates));
 
+        if (!predicates.isEmpty()) {
+            sb.append(" WHERE ");
+            sb.append(Joiner.on(" AND ").join(predicates));
+        }
+
+        return sb.toString();
+    }
+
+    String selectTasks(Set<Task> tasks) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SELECT ");
+        sb.append(ALL_COLUMNS);
+        sb.append(" FROM ");
+        sb.append(tableName);
+        sb.append(" WHERE ");
+        List<String> predicates = new ArrayList<>();
+        for (Task task : tasks) {
+            List<String> task_predicates = new ArrayList<>();
+            task_predicates.add("name='" + task.getName() + "'");
+            task_predicates.add("bucket_time='" + PostgresqlTimeUtils.toPostgresqlTimestampWithTz(task.getBucketTime()) + "'::TIMESTAMPTZ");
+            predicates.add("(" + Joiner.on(" AND ").join(task_predicates) + ")");
+        }
+        sb.append(Joiner.on(" OR ").join(predicates));
         return sb.toString();
     }
 
