@@ -38,7 +38,8 @@ public class PostgresqlTask implements Task {
     private Instant acquiredAt;
     private Instant completedAt;
     private String message;
-    private int failCount;
+    @Builder.Default
+    private int failCount = 0;
 
     @Builder.Default
     private TaskStatus status = TaskStatus.AVAILABLE;
@@ -170,6 +171,7 @@ public class PostgresqlTask implements Task {
             this.conn.commit();
             // only update the local state after the transaction succeeds
             this.message = message;
+            ++this.failCount;
         } catch (SQLException e) {
             String errorMessage = MessageFormat.format("Unable to fail task name {0} bucket time {1}", name, bucketTime);
             throw new RuntimeException(message, e);

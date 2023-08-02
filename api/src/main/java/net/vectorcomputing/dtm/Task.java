@@ -77,11 +77,13 @@ public interface Task extends Closeable {
     Instant getCompletedAt();
 
     /**
-     * Sets the task status to FAILED.
+     * Sets the task status to AVAILABLE and increment the fail count.
      * Can include an optional message.
      * @param message
      */
     void failed(String message);
+
+    int getFailCount();
 
     /**
      * Sets the task status to SKIP.

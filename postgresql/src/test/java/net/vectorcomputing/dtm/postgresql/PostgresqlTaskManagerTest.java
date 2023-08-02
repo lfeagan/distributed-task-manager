@@ -29,7 +29,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void createAndGet() throws DuplicateTaskException, TaskManagerException {
+   public void createAndGet() throws TaskManagerException {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
@@ -45,6 +45,30 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
 
       Task task1_fetched = ptm.getTask("createAndGet", bucket_time);
       System.out.println("read:  " + task1_fetched);
+   }
+
+   @Test
+   public void createAndFail() throws TaskManagerException {
+      PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
+      ptm.initialize();
+      Duration bucket_interval = Duration.ofMinutes(5);
+      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      String taskName = "createAndFail";
+      Task task1 = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), taskName);
+      task1.acquire("createAndFailTest");
+      Assert.assertEquals(task1.getFailCount(), 0);
+      task1.failed("failed manually by test");
+      Assert.assertEquals(task1.getFailCount(), 1);
+      try {
+         task1.failed("again");
+         Assert.fail("was able to fail twice");
+      } catch (IllegalStateException e) {
+         // do nothing, we should be in this state as the lock is not acquired
+      }
+
+      task1.acquire("second try");
+      task1.failed("second fail");
+      Assert.assertEquals(task1.getFailCount(), 2);
    }
 
    @Test
@@ -162,8 +186,8 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       randomTask.completed("done");
       ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.SKIP, taskName + "_skipAll");
 
-      final List<Task> failedTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
-      for (Task task : failedTasks) {
+      final List<Task> skippedTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
+      for (Task task : skippedTasks) {
          Assert.assertEquals(task.getStatus(), TaskStatus.SKIP);
       }
    }
