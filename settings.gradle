@@ -32,7 +32,7 @@ dependencyResolutionManagement {
 
             // SLF4J & Loggging
             library('slf4j-api', 'org.slf4j:slf4j-api:1.7.32')
-            library('logback-classic', 'ch.qos.logback:logback-classic:1.2.7')
+            library('logback-classic', 'ch.qos.logback:logback-classic:1.4.8')
             // Janino (for Logback conditional processing)
             library('janino', 'org.codehaus.janino:janino:3.1.9')
 
