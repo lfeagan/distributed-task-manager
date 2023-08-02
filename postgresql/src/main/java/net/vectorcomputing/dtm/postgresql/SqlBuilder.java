@@ -67,6 +67,10 @@ public class SqlBuilder {
                 + ")";
     }
 
+    /**
+     * Creates the SQL to determine if the tasks table exists.
+     * @return
+     */
     String checkTableExists() {
         return "SELECT 1 FROM " + tableName + " WHERE 1=2";
     }
