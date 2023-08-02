@@ -1,9 +1,6 @@
 package net.vectorcomputing.dtm.postgresql;
 
-import net.vectorcomputing.dtm.TaskManager;
-import net.vectorcomputing.dtm.Task;
-import net.vectorcomputing.dtm.TaskQuery;
-import net.vectorcomputing.dtm.TaskStatus;
+import net.vectorcomputing.dtm.*;
 import org.postgresql.util.PGInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +28,7 @@ public class PostgresqlTaskManager implements TaskManager {
         this.sqlBuilder = new SqlBuilder("tasks", 32);
     }
 
-    public void initialize() {
+    public void initialize() throws TaskManagerException {
         Connection conn = null;
         Statement stmt = null;
         try {
@@ -39,7 +36,7 @@ public class PostgresqlTaskManager implements TaskManager {
             stmt = conn.createStatement();
             stmt.execute(sqlBuilder.createTaskTable());
         } catch (SQLException e) {
-            throw new RuntimeException("Unable to initialize", e);
+            throw new TaskManagerException("Unable to initialize", e);
         } finally {
             closeWithoutException(stmt);
             closeWithoutException(conn);
@@ -51,7 +48,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy) {
+    public Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy) throws DuplicateTaskException, TaskManagerException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         try {
@@ -62,7 +59,7 @@ public class PostgresqlTaskManager implements TaskManager {
             pstmt.setTimestamp(2, Timestamp.from(bucketTime));
             org.postgresql.util.PGInterval interval = new PGInterval(bucketInterval.toString());
             pstmt.setObject(3, interval);
-            pstmt.setString(4, TaskStatus.CREATED.name());
+            pstmt.setString(4, TaskStatus.AVAILABLE.name());
             pstmt.setString(5, createdBy);
             pstmt.setTimestamp(6, java.sql.Timestamp.from(Instant.now()));
             pstmt.executeUpdate();
@@ -71,16 +68,15 @@ public class PostgresqlTaskManager implements TaskManager {
                     .name(name)
                     .bucketTime(bucketTime)
                     .bucketInterval(bucketInterval)
-                    .status(TaskStatus.CREATED)
+                    .status(TaskStatus.AVAILABLE)
                     .ptm(this).build();
         } catch (SQLException e) {
             // unique constraint violation
             if (e.getSQLState().equals("23505")) {
-//                throw new DuplicateKeyException()
                 String message = MessageFormat.format("Task with name {0} and bucket_time {1} already exists", name, bucketTime);
-                throw new RuntimeException(message, e);
+                throw new DuplicateTaskException(message, e);
             }
-            throw new RuntimeException("Unable to create task", e);
+            throw new TaskManagerException("Unable to create task", e);
         } finally {
             closeWithoutException(pstmt);
             closeWithoutException(conn);
@@ -88,7 +84,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public Task getAndAcquireFirstTask(TaskQuery taskQuery) {
+    public Task getAndAcquireFirstTask(TaskQuery taskQuery) throws TaskManagerException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet resultSet = null;
@@ -108,7 +104,7 @@ public class PostgresqlTaskManager implements TaskManager {
             // on exception, close the connection
             closeWithoutException(conn);
             String message = MessageFormat.format("Unable to get tasks for query {0}", sql);
-            throw new RuntimeException(message, e);
+            throw new TaskManagerException(message, e);
         } finally {
             closeWithoutException(resultSet);
             closeWithoutException(pstmt);
@@ -116,7 +112,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public Task getTask(String name, Instant bucketTime) {
+    public Task getTask(String name, Instant bucketTime) throws TaskManagerException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet resultSet = null;
@@ -133,7 +129,7 @@ public class PostgresqlTaskManager implements TaskManager {
             return null;
         } catch (SQLException e) {
             String message = MessageFormat.format("Unable to get task with name {0} and bucket time {1}", name, bucketTime);
-            throw new RuntimeException(message, e);
+            throw new TaskManagerException(message, e);
         } finally {
             closeWithoutException(resultSet);
             closeWithoutException(pstmt);
@@ -174,7 +170,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public List<Task> getTasks(TaskQuery taskQuery) {
+    public List<Task> getTasks(TaskQuery taskQuery) throws TaskManagerException {
         Connection conn = null;
         PreparedStatement pstmt = null;
         ResultSet resultSet = null;
@@ -191,7 +187,7 @@ public class PostgresqlTaskManager implements TaskManager {
             return tasks;
         } catch (SQLException e) {
             String message = MessageFormat.format("Unable to get tasks for query {0}", sql);
-            throw new RuntimeException(message, e);
+            throw new TaskManagerException(message, e);
         } finally {
             closeWithoutException(resultSet);
             closeWithoutException(pstmt);
@@ -200,7 +196,7 @@ public class PostgresqlTaskManager implements TaskManager {
     }
 
     @Override
-    public void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy) {
+    public void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy) throws TaskManagerException {
         if (tasks.stream().filter(t -> t.isAcquired()).count() > 0) {
             throw new IllegalArgumentException("Cannot call set task status on tasks that are already acquired");
         }
@@ -225,7 +221,7 @@ public class PostgresqlTaskManager implements TaskManager {
 
             } else {
                 String message = MessageFormat.format("Unable to get tasks for query {0}", sql);
-                throw new RuntimeException(message, e);
+                throw new TaskManagerException(message, e);
             }
         } finally {
             closeWithoutException(resultSet);

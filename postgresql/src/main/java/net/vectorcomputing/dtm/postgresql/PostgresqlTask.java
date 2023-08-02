@@ -38,9 +38,10 @@ public class PostgresqlTask implements Task {
     private Instant acquiredAt;
     private Instant completedAt;
     private String message;
+    private int failCount;
 
     @Builder.Default
-    private TaskStatus status = TaskStatus.CREATED;
+    private TaskStatus status = TaskStatus.AVAILABLE;
 
     private String exception;
 
@@ -78,7 +79,7 @@ public class PostgresqlTask implements Task {
                 this.acquiredBy = acquiredBy;
                 this.acquiredAt = Instant.now();
                 pstmt = conn.prepareStatement(ptm.sqlBuilder.updateAcquired());
-                pstmt.setString(1, TaskStatus.RUNNING.name());
+                pstmt.setString(1, TaskStatus.ACQUIRED.name());
                 pstmt.setString(2, acquiredBy);
                 pstmt.setTimestamp(3, Timestamp.from(acquiredAt));
                 pstmt.setString(4, name);
@@ -118,7 +119,7 @@ public class PostgresqlTask implements Task {
             // and the lock on the task has already been acquired
             final Instant now = Instant.now();
             pstmt = this.conn.prepareStatement(ptm.sqlBuilder.updateStatusMessageCompletedAt());
-            pstmt.setString(1, TaskStatus.COMPLETED.name());
+            pstmt.setString(1, TaskStatus.COMPLETE.name());
             pstmt.setTimestamp(2,Timestamp.from(now));
             if (message == null) {
                 pstmt.setNull(3, Types.CLOB);
@@ -156,8 +157,8 @@ public class PostgresqlTask implements Task {
         try {
             // this.conn is already has auto-commit set to false
             // and the lock on the task has already been acquired
-            pstmt = this.conn.prepareStatement(ptm.sqlBuilder.updateStatusAndMessage());
-            pstmt.setString(1, TaskStatus.FAILED.name());
+            pstmt = this.conn.prepareStatement(ptm.sqlBuilder.updateStatusAndMessageIncrementFailCount());
+            pstmt.setString(1, TaskStatus.AVAILABLE.name());
             if (message == null) {
                 pstmt.setNull(2, Types.CLOB);
             } else {

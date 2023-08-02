@@ -55,8 +55,16 @@ public interface Task extends Closeable {
      */
     TaskStatus getStatus();
 
+    /**
+     * Attempts to acquire this task, and sets the acquried_by column.
+     * @param acquiredBy
+     */
     void acquire(String acquiredBy);
 
+    /**
+     * Returns <code>true</code> if this task has acquired the database lock on the associated row.
+     * @return
+     */
     boolean isAcquired();
 
     /**

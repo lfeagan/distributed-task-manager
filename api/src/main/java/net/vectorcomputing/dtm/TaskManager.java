@@ -17,8 +17,9 @@ public interface TaskManager {
      * @param bucketTime
      * @param bucketInterval
      * @return
+     * @throws DuplicateTaskException
      */
-    Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy);
+    Task createTask(String name, Instant bucketTime, PeriodDuration bucketInterval, String createdBy) throws DuplicateTaskException, TaskManagerException;
 
     /**
      * Searches the table of tasks and returns the first task that satisfies the query conditions
@@ -26,11 +27,24 @@ public interface TaskManager {
      * @param taskQuery
      * @return
      */
-    Task getAndAcquireFirstTask(TaskQuery taskQuery);
+    Task getAndAcquireFirstTask(TaskQuery taskQuery) throws TaskManagerException;
 
-    Task getTask(String name, Instant bucketTime);
+    /**
+     * Fetches the task (without acquiring it) with the specified name and bucket time.
+     * In SQL terms, this method searches committed rows.
+     * @param name
+     * @param bucketTime
+     * @return
+     */
+    Task getTask(String name, Instant bucketTime) throws TaskManagerException;
 
-    List<Task> getTasks(TaskQuery taskQuery);
+    /**
+     * Fetches the task(s) that satisfy the specified task query (without acquiring any of them).
+     * In SQL terms, this method searches committed rows.
+     * @param taskQuery
+     * @return
+     */
+    List<Task> getTasks(TaskQuery taskQuery) throws TaskManagerException;
 
     /**
      * Atomically assign the specified task status to a set of tasks.
@@ -38,7 +52,7 @@ public interface TaskManager {
      * @param updatedStatus
      * @param acquiredBy the name to use when identifying the lock acquirer for the update
      */
-    void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy);
+    void setTaskStatus(Set<Task> tasks, TaskStatus updatedStatus, String acquiredBy) throws TaskManagerException;
 
 
 //    /**

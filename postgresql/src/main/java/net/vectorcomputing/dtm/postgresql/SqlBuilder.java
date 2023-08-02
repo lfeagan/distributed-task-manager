@@ -61,6 +61,7 @@ public class SqlBuilder {
                 + "acquired_by VARCHAR("+ idLength +"), "
                 + "acquired_at TIMESTAMPTZ, "
                 + "completed_at TIMESTAMPTZ, "
+                + "fail_count INT DEFAULT 0, "
                 + "message TEXT, "
                 + "PRIMARY KEY (name,bucket_time) "
                 + ")";
@@ -151,6 +152,15 @@ public class SqlBuilder {
         sb.append("UPDATE ");
         sb.append(tableName);
         sb.append(" SET status=?, message=?");
+        sb.append(" WHERE name=? and bucket_time=?");
+        return sb.toString();
+    }
+
+    String updateStatusAndMessageIncrementFailCount() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("UPDATE ");
+        sb.append(tableName);
+        sb.append(" SET status=?, message=?, fail_count=fail_count+1");
         sb.append(" WHERE name=? and bucket_time=?");
         return sb.toString();
     }

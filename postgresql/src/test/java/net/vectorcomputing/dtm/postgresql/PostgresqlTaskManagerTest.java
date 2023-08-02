@@ -29,7 +29,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void createAndGet() {
+   public void createAndGet() throws DuplicateTaskException, TaskManagerException {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
@@ -48,7 +48,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void acquireViaQuery() {
+   public void acquireViaQuery() throws DuplicateTaskException, TaskManagerException {
       final int numTasks = 1;
       final String taskName = "acquiredViaQuery";
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
@@ -66,7 +66,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       final TaskQuery query = TaskQuery.builder()
               .name(taskName)
               .bucketStartTime(bucket_time.minusSeconds(1))
-              .statuses(ImmutableSet.of(TaskStatus.CREATED, TaskStatus.FAILED))
+              .statuses(ImmutableSet.of(TaskStatus.AVAILABLE))
               .build();
       while ((acquiredViaQuery = ptm.getAndAcquireFirstTask(query)) != null) {
          Assert.assertTrue(acquiredViaQuery.isAcquired());
@@ -77,7 +77,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void createAndSkip() {
+   public void createAndSkip() throws DuplicateTaskException, TaskManagerException {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
@@ -101,7 +101,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void doubleCreate() {
+   public void doubleCreate() throws DuplicateTaskException, TaskManagerException {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
@@ -111,7 +111,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       try {
          Task second = ptm.createTask("doubleCreate", bucket_time, PeriodDuration.of(bucket_interval), "doubleCreate");
          Assert.fail("made two");
-      } catch (RuntimeException e) {
+      } catch (TaskManagerException e) {
          // do nothing
       }
       Task second = ptm.getTask("doubleCreate", bucket_time);
@@ -125,7 +125,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
    }
 
    @Test
-   public void multiAssignStatus() {
+   public void multiAssignStatus() throws TaskManagerException {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
@@ -137,15 +137,15 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       Assert.assertEquals(createdTasks.size(), bucket_count);
       // verify all have status created
       for (Task task : createdTasks) {
-         Assert.assertEquals(task.getStatus(), TaskStatus.CREATED);
+         Assert.assertEquals(task.getStatus(), TaskStatus.AVAILABLE);
       }
 
       // change all to status running
-      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.RUNNING, taskName + "_test");
+      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.ACQUIRED, taskName + "_test");
       final List<Task> runningTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
       // verify all have status running
       for (Task task : runningTasks) {
-         Assert.assertEquals(task.getStatus(), TaskStatus.RUNNING);
+         Assert.assertEquals(task.getStatus(), TaskStatus.ACQUIRED);
       }
       Task randomTask = runningTasks.get(ThreadLocalRandom.current().nextInt(bucket_count));
       Assert.assertFalse(randomTask.isAcquired());
@@ -153,23 +153,23 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
 
       // attempt to mark everything failed
       try {
-         ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.FAILED, taskName + "_failAll");
+         ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.ACQUIRED, taskName + "_acqAll");
          Assert.fail("we shouldn't have been able to acquire the lock");
-      } catch (RuntimeException e) {
+      } catch (TaskManagerException e) {
          // do nothing
       }
 
       randomTask.completed("done");
-      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.FAILED, taskName + "_failAll");
+      ptm.setTaskStatus(ImmutableSet.copyOf(createdTasks), TaskStatus.SKIP, taskName + "_skipAll");
 
       final List<Task> failedTasks = ptm.getTasks(TaskQuery.builder().name(taskName).build());
       for (Task task : failedTasks) {
-         Assert.assertEquals(task.getStatus(), TaskStatus.FAILED);
+         Assert.assertEquals(task.getStatus(), TaskStatus.SKIP);
       }
    }
 
    @Test
-   public void parallelCreate() {
+   public void parallelCreate() throws TaskManagerException {
       // create N threads
       // each thread will attempt to M items
 
@@ -198,11 +198,10 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
          }
 
          Assert.assertEquals(createdTasks.size(), numTasks, "created task count via future");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.CREATED)).build()).size(), numTasks, "created task count via query");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.COMPLETED)).build()).size(), 0, "no created tasks are completed");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.FAILED)).build()).size(), 0, "no created tasks are failed");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.AVAILABLE)).build()).size(), numTasks, "created task count via query");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.COMPLETE)).build()).size(), 0, "no created tasks are completed");
          Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.SKIP)).build()).size(), 0, "no created tasks are skipped");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.RUNNING)).build()).size(), 0, "no created tasks are running");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.ACQUIRED)).build()).size(), 0, "no created tasks are running");
       }
 
       {
@@ -222,11 +221,10 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
          }
 
          Assert.assertEquals(completedTasks.size(), numTasks, "completed task count via future");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.CREATED)).build()).size(), 0, "created task count via query");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.COMPLETED)).build()).size(), numTasks, "no created tasks are completed");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.FAILED)).build()).size(), 0, "no created tasks are failed");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.AVAILABLE)).build()).size(), 0, "created task count via query");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.COMPLETE)).build()).size(), numTasks, "no created tasks are completed");
          Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.SKIP)).build()).size(), 0, "no created tasks are skipped");
-         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.RUNNING)).build()).size(), 0, "no created tasks are running");
+         Assert.assertEquals(ptm.getTasks(TaskQuery.builder().name(taskName).statuses(ImmutableSet.of(TaskStatus.ACQUIRED)).build()).size(), 0, "no created tasks are running");
       }
    }
 
@@ -281,7 +279,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
             try {
                Task acquiredTask = taskManager.getAndAcquireFirstTask(TaskQuery.builder()
                        .name(taskName)
-                       .statuses(ImmutableSet.of(TaskStatus.CREATED, TaskStatus.FAILED)).build());
+                       .statuses(ImmutableSet.of(TaskStatus.AVAILABLE)).build());
                if (ThreadLocalRandom.current().nextBoolean()) {
                   acquiredTask.failed("failed");
                } else {

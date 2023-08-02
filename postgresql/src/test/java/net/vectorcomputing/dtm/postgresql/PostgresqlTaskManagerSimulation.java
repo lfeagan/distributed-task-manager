@@ -49,7 +49,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
     static AtomicReference<ScheduledFuture> goodWorker = new AtomicReference<>();
 
     @Test
-    public void simulate() {
+    public void simulate() throws TaskManagerException {
         final int numThreads = 8;
         final String taskName = "simulation";
         PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
@@ -76,7 +76,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         } catch (CancellationException e) {
             List<Task> allTasks = ptm.getTasks(TaskQuery.builder().build());
             for (Task t : allTasks) {
-                Assert.assertEquals(t.getStatus(), TaskStatus.COMPLETED);
+                Assert.assertEquals(t.getStatus(), TaskStatus.COMPLETE);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -115,7 +115,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
             final TaskQuery pendingWorkQuery = TaskQuery.builder()
                     .name(taskName)
                     .bucketStartTime(bucket_time.minusSeconds(60)) // 1 minute search window
-                    .statuses(ImmutableSet.of(TaskStatus.CREATED, TaskStatus.FAILED))
+                    .statuses(ImmutableSet.of(TaskStatus.AVAILABLE))
                     .build();
             try {
                 Task acquiredTask = taskManager.getAndAcquireFirstTask(pendingWorkQuery);
@@ -184,7 +184,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
             final TaskQuery completedWorkQuery = TaskQuery.builder()
                     .name(taskName)
                     .bucketStartTime(bucket_time.minusSeconds(60)) // 1 minute search window
-                    .statuses(ImmutableSet.of(TaskStatus.COMPLETED))
+                    .statuses(ImmutableSet.of(TaskStatus.COMPLETE))
                     .build();
             try {
                 Task acquiredTask = taskManager.getAndAcquireFirstTask(completedWorkQuery);
