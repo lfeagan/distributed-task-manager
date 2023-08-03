@@ -23,7 +23,7 @@ The scenario that inspired this work was the need to query a potentially unrelia
 
 ```mermaid
 ---
-title: Task Engine Cornucopia
+title: Task Engine Menagerie
 ---
 flowchart LR
     dtm[(Distributed Task Manager)]
@@ -43,7 +43,7 @@ flowchart LR
 2. Designed for minimal maintenance and overhead.
 3. Operates purely as a library–no server required.
 4. No specialized distributed locking library required.
-5. No defects related to 
+5. Task lock(s) automatically release on unexpected task failure.
 
 1. Tasks are in one of four states:
     1. AVAILABLE

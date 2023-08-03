@@ -33,7 +33,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       String taskName = "createAndGet";
       Task task1 = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), taskName);
       System.out.println("wrote: " + task1);
@@ -52,7 +52,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       String taskName = "createAndFail";
       Task task1 = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), taskName);
       task1.acquire("createAndFailTest");
@@ -78,7 +78,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       List<Task> createdTasks = new ArrayList<>(numTasks);
       for (int i=0; i < numTasks; ++i) {
          createdTasks.add(ptm.createTask(taskName, bucket_time.plus(bucket_interval.multipliedBy(i)), PeriodDuration.of(bucket_interval), taskName));
@@ -105,7 +105,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       final String taskName = "skipMe";
       Task skipTask = ptm.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), "createAndSkip");
       try {
@@ -129,7 +129,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
 
       Task first = ptm.createTask("doubleCreate", bucket_time, PeriodDuration.of(bucket_interval), "doubleCreate");
       try {
@@ -153,7 +153,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       int bucket_count = 10;
       // create 10 tasks
       final String taskName = "multiAssignStatus";
@@ -203,7 +203,7 @@ public class PostgresqlTaskManagerTest extends TimescaleTestContainer {
       PostgresqlTaskManager ptm = new PostgresqlTaskManager(createNonPoolingDataSource());
       ptm.initialize();
       Duration bucket_interval = Duration.ofMinutes(5);
-      Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+      Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
       final ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
       {
          final List<Future<List<Task>>> creationFutures = new ArrayList<>();

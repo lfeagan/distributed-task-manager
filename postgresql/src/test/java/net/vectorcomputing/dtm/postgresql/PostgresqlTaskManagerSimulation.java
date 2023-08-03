@@ -111,7 +111,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         @Override
         @SneakyThrows
         public void run() {
-            Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+            Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
             final TaskQuery pendingWorkQuery = TaskQuery.builder()
                     .name(taskName)
                     .bucketStartTime(bucket_time.minusSeconds(60)) // 1 minute search window
@@ -180,7 +180,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         @Override
         @SneakyThrows
         public void run() {
-            Instant bucket_time = TimeUtils.alignWithDuration(Instant.now(), Instant.EPOCH, bucket_interval);
+            Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
             final TaskQuery completedWorkQuery = TaskQuery.builder()
                     .name(taskName)
                     .bucketStartTime(bucket_time.minusSeconds(60)) // 1 minute search window

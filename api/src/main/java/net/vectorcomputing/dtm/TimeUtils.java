@@ -1,13 +1,11 @@
 package net.vectorcomputing.dtm;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.threeten.extra.PeriodDuration;
 
 import java.math.BigDecimal;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
 import static java.time.temporal.ChronoField.*;
@@ -40,14 +38,14 @@ public final class TimeUtils {
     }
 
     /**
-     * Aligns the specified timestamp with the nearest period-duration interval integrally offset from the origin time.
+     * Aligns the specified timestamp with the nearest, older duration interval integrally offset from the origin time.
      * Minimum supported precision is milliseconds.
      * @param timestamp
      * @param origin
      * @param interval
      * @return
      */
-    public static Instant alignWithDuration(Instant timestamp, final Instant origin, final Duration interval) {
+    public static Instant alignWithInterval(Instant timestamp, final Instant origin, final Duration interval) {
         Objects.requireNonNull(timestamp, "timestamp must be specified");
         Objects.requireNonNull(origin, "origin must be specified");
         Objects.requireNonNull(interval, "interval must be specified");
@@ -81,8 +79,19 @@ public final class TimeUtils {
         return alignedTime;
     }
 
+    /**
+     * Aligns the specified timestamp with the nearest period interval integrally offset from the origin time.
+     * Minimum supported precision is milliseconds.
+     * @param timestamp
+     * @param origin
+     * @param interval
+     * @return
+     */
+    public static Instant alignWithInterval(Instant timestamp, final Instant origin, final Period interval) {
+        return alignWithInterval(timestamp, origin, interval, ZoneId.of("UTC"));
+    }
 
-    public static Instant alignWithDuration(Instant timestamp, final Instant origin, final Period interval, ZoneId timeZone) {
+    public static Instant alignWithInterval(Instant timestamp, final Instant origin, final Period interval, ZoneId timeZone) {
         Objects.requireNonNull(timestamp, "timestamp must be specified");
         Objects.requireNonNull(origin, "origin must be specified");
         Objects.requireNonNull(interval, "interval must be specified");
