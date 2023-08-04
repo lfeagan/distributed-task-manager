@@ -176,5 +176,4 @@ public class PostgresqlTimeUtils {
         return PeriodDuration.of(p, d);
     }
 
-
 }

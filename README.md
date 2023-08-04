@@ -6,14 +6,14 @@ DTM operates purely as a library helping developers to find available work needi
 
 To understand how DTM works, think of a calendar with numbered days. Every day, we need to call our mother. Sometimes we might succeed the first time we try, other times we may need to try again later. Using DTM, we might identify this task as `call_mom` with an interval of `P1D` and a time of `00:00:00Z`. Every time we attempt to run this task, we will attempt to acquire a lock on the row uniquely identifying today's entry, if it is still marked as `AVAILABLE`. If we succeed, we will commit the transaction with the status set to `COMPLETE` and if we don't, we will commit with an incremented `fail_count`. If the task encounters an exception, the transaction will simply be rolled back to the status `AVAILABLE` that it was created with and can immediately be discovered by another task worker for execution.
 
-```mermaid
-timeline
-    title Call Mom
-    Day 1 : COMPLETE
-    Day 2 : ACQUIRED
-    Day 3 : SKIP
-    Day 4 : AVAILABLE
-```
+#### Call Mom
+| Day | Status    |
+|-----|-----------|
+| 1   | COMPLETE  |
+| 2   | COMPLETE  |
+| 3   | ACQUIRED  |
+| 4   | SKIP      |
+| 4   | AVAILABLE |
 
 ## Example
 For example, we might have a task to produce a report every five minutes that described the number of sensor records present in the five-minute interval that began six minutes ago. In a traditional cron type system, we would schedule this job to run at a fixed interval. Most times it would succeed, but sometimes it would fail. To deal with this, we could script some retry logic, but there are other challenges we need to deal with, such as scaling out. So, we might decide to purchase a more industrial solution, such as [JobRunr](https://www.jobrunr.io/en/) to address these issues. However, as we develop more advanced feedback systems, we sometimes need more than one axis of control. For example, a big batch of data may come in at a later time that needs to re-run of an already completed analysis. Any service can acquire a task at any time and update the status to `AVAILABLE` so that it will be re-run. In this regard, DTM is operating more like a task queue that any service can append to.
