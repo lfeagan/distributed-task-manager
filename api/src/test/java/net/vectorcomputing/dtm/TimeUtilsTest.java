@@ -119,7 +119,7 @@ public class TimeUtilsTest {
         Instant timestamp = instantFromRFC3339("1973-12-03T15:53:58Z");
         Instant origin = instantFromRFC3339("2000-01-01T00:00:00Z");
         Period window = Period.parse("P100Y");
-        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window);
+        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window, ZoneId.of("UTC"));
         System.out.println(bucketStart);
         Assert.assertEquals(bucketStart, instantFromRFC3339("1900-01-01T00:00:00Z"), "start");
     }
@@ -129,7 +129,7 @@ public class TimeUtilsTest {
         Instant timestamp = instantFromRFC3339("2023-12-03T15:53:58Z");
         Instant origin = instantFromRFC3339("2000-01-01T00:00:00Z");
         Period window = Period.parse("P100Y");
-        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window);
+        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window, ZoneId.of("UTC"));
         System.out.println(bucketStart);
         Assert.assertEquals(bucketStart, instantFromRFC3339("2000-01-01T00:00:00Z"), "start");
     }
@@ -139,8 +139,23 @@ public class TimeUtilsTest {
         Instant timestamp = instantFromRFC3339("4123-12-03T15:53:58Z");
         Instant origin = instantFromRFC3339("2000-01-01T00:00:00Z");
         Period window = Period.parse("P100Y");
-        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window);
+        Instant bucketStart = TimeUtils.alignWithInterval(timestamp, origin, window, ZoneId.of("UTC"));
         System.out.println(bucketStart);
         Assert.assertEquals(bucketStart, instantFromRFC3339("4100-01-01T00:00:00Z"), "start");
     }
+
+//    @Test
+////    public void leapSecond() {
+////        final Instant origin = instantFromRFC3339("2000-01-01T00:00:00Z");
+////        // june 30, 2015, 23:59:59
+////        {
+////            final Instant timestamp = instantFromRFC3339("2015-06-30T23:59:59Z");
+////            final ZonedDateTime zonedTimestamp = ZonedDateTime.ofInstant(timestamp, ZoneId.of("UTC"));
+////            Assert.assertEquals(zonedTimestamp.plusSeconds(1).get(ChronoField.DAY_OF_MONTH), 30);
+////            final Duration oneSecond = Duration.ofSeconds(1);
+////            TimeUtils.alignWithInterval(timestamp, origin, oneSecond);
+////        }
+////        final Period oneDay = Period.ofDays(1);
+//
+//    }
 }

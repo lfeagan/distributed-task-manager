@@ -10,9 +10,24 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.util.Locale;
 
-import static net.vectorcomputing.dtm.TimeUtils.*;
+import static java.time.temporal.ChronoField.*;
+import static java.time.temporal.ChronoField.MILLI_OF_SECOND;
 
 public class PostgresqlTimeUtils {
+
+    private static final double NANOS_PER_SECOND_DOUBLE = 1000000000.0;
+    private static final long NANOS_PER_SECOND_LONG = 1000000000L;
+
+    public static final DateTimeFormatter ISO_LOCAL_TIME_MILLIS = new DateTimeFormatterBuilder()
+            .appendValue(HOUR_OF_DAY, 2)
+            .appendLiteral(':')
+            .appendValue(MINUTE_OF_HOUR, 2)
+            .optionalStart()
+            .appendLiteral(':')
+            .appendValue(SECOND_OF_MINUTE, 2)
+            .optionalStart()
+            .appendFraction(MILLI_OF_SECOND, 0, 3, true)
+            .toFormatter();
 
     static DateTimeFormatter postgresqlTimestampWithTzFormatter = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
@@ -74,7 +89,7 @@ public class PostgresqlTimeUtils {
                 "'%d hours %d mins %s secs'::INTERVAL",
                 duration.toHoursPart(), // hours
                 duration.toMinutesPart(),
-                df.format(duration.toSecondsPart() + duration.getNano() / DOUBLE_NANOS_PER_SECOND)
+                df.format(duration.toSecondsPart() + duration.getNano() / NANOS_PER_SECOND_DOUBLE)
         );
     }
 
@@ -95,7 +110,7 @@ public class PostgresqlTimeUtils {
         }
         if (duration.toSecondsPart() != 0 || duration.getNano() != 0) {
             sb.append(String.format("%s secs",
-                    df.format(duration.toSecondsPart() + duration.getNano() / DOUBLE_NANOS_PER_SECOND)));
+                    df.format(duration.toSecondsPart() + duration.getNano() / NANOS_PER_SECOND_DOUBLE)));
         }
 
         sb.append("'::INTERVAL");
@@ -118,7 +133,7 @@ public class PostgresqlTimeUtils {
                 pd.getPeriod().getDays(),
                 pd.getDuration().toHoursPart(), // hours
                 pd.getDuration().toMinutesPart(),
-                df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / DOUBLE_NANOS_PER_SECOND)
+                df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / NANOS_PER_SECOND_DOUBLE)
         );
     }
 
@@ -148,7 +163,7 @@ public class PostgresqlTimeUtils {
         }
         if (pd.getDuration().toSecondsPart() != 0 || pd.getDuration().getNano() != 0) {
             sb.append(String.format("%s secs",
-                    df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / DOUBLE_NANOS_PER_SECOND)));
+                    df.format(pd.getDuration().toSecondsPart() + pd.getDuration().getNano() / NANOS_PER_SECOND_DOUBLE)));
         }
 
         sb.append("'::INTERVAL");
