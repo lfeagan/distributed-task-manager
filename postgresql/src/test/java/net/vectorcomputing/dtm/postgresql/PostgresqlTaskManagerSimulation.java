@@ -15,6 +15,7 @@ import org.threeten.extra.PeriodDuration;
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -112,13 +113,13 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         @SneakyThrows
         public void run() {
             Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
-            final TaskQuery pendingWorkQuery = TaskQuery.builder()
+            final TaskQuery availableWorkQuery = TaskQuery.builder()
                     .name(taskName)
-                    .bucketStartTime(bucket_time.minusSeconds(60)) // 1 minute search window
+                    .bucketStartTime(bucket_time.minus(72, ChronoUnit.HOURS)) // 3 day search window
                     .statuses(ImmutableSet.of(TaskStatus.AVAILABLE))
                     .build();
             try {
-                Task acquiredTask = taskManager.getAndAcquireFirstTask(pendingWorkQuery);
+                Task acquiredTask = taskManager.getAndAcquireFirstTask(availableWorkQuery);
                 if (acquiredTask == null) { // backlog query returned nothing
                     // try to create for current bucket
                     try {
@@ -140,15 +141,18 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
                     // successfully acquired via backlog query or create-acquire sequence
                     Assert.assertTrue(acquiredTask.isAcquired());
                     try {
+                        LOGGER.info("processing acquired task: {}", acquiredTask);
                         Thread.sleep(ThreadLocalRandom.current().nextInt(100));
-                    } catch (InterruptedException e) {
+                        LOGGER.info("processed data");
+                        // send to kafka
+                        acquiredTask.completed("finished");
+                        LOGGER.info("finished task w/bucket time {} at {} ", acquiredTask.getBucketTime(), acquiredTask.getCompletedAt());
+                        ++acquiredCount;
+                    } catch (Exception e) {
                         // do nothing
+                        LOGGER.error("something bad happened", e);
+                        acquiredTask.failed(e.getMessage());
                     }
-                    LOGGER.info("processed data");
-                    // send to kafka
-                    acquiredTask.completed("finished");
-                    LOGGER.info("finished task w/bucket time {} at {} ", acquiredTask.getBucketTime(), acquiredTask.getCompletedAt());
-                    ++acquiredCount;
                 } else {
                     LOGGER.info("unable to acquire task");
                 }
