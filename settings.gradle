@@ -65,7 +65,7 @@ dependencyResolutionManagement {
             library('testcontainers-rabbitmq', 'org.testcontainers', 'rabbitmq').versionRef('testcontainers')
             bundle('testcontainers', ['testcontainers-postgresql', 'testcontainers-mongodb', 'testcontainers-kafka', 'testcontainers-toxiproxy', 'testcontainers-rabbitmq'])
 
-            library('testng', 'org.testng:testng:7.4.0')
+            library('testng', 'org.testng:testng:7.8.0')
 
             library('errorprone-core', 'com.google.errorprone:error_prone_core:2.0.2') // # was using def in gradle files
         }
