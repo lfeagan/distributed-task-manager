@@ -1,0 +1,12 @@
+## Overly Simplified Example
+To understand how DTC works, think of a calendar with numbered days. Every day, we need to call our mother. Sometimes we might succeed the first time we try, other times we may need to try again later. Using DTC, we might identify this task as `call_mom` with an interval of `P1D` and a time of `00:00:00Z`. Every time we attempt to run this task, we will attempt to acquire a lock on the row uniquely identifying today's entry, if it is still marked as `AVAILABLE`. If we succeed, we will commit the transaction with the status set to `COMPLETE` and if we don't, we will commit with an incremented `fail_count`. If the task encounters an exception, the transaction will simply be rolled back to the status `AVAILABLE` that it was created with and can immediately be discovered by another task worker for execution.
+
+## Call Mom
+| Day    | Monday   | Tuesday  | Wednesday | Thursday | Friday    | Saturday | Sunday |
+|--------|----------|----------|-----------|----------|-----------|----------|--------|
+| Status | COMPLETE | COMPLETE | SKIP      | ACQUIRED | AVAILABLE | SKIP     |        |
+
+
+The scenario that inspired DTC was the need to query a potentially unreliable database and produce a report counting the number of values present for a time range with various groupings of the data and then to publish this report via Kafka to other systems to trigger various alerts and initiate other processing steps to address any deficiencies. In addition to this initial, one-time processing, other systems can detect materially changed conditions and request the re-processing of a window that was previously analyzed. In this regard, DTC operates more like a queue with an excellent query language, row-level locking, and transactions. 
+
+The scenario that inspired this work was the need to query a potentially unreliable database and produce a report counting the number of values present for a time range with various groupings of the data to be consumed by other systems to trigger alerts and initiate reprocessing from archives to fill the gaps. In addition to this one time job, it may be desirable to allow other services to adjust the status of a completed task and mark it as available so that it will be processed again, perhaps due to the arrival of a significant volume of new data, bringing the fidelity of the previous result into doubt.

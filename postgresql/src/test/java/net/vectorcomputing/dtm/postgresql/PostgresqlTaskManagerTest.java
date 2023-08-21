@@ -1,5 +1,6 @@
 package net.vectorcomputing.dtm.postgresql;
 
+import com.github.lfeagan.wheat.time.TimeUtils;
 import net.vectorcomputing.dtm.*;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableSet;

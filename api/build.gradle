@@ -7,20 +7,19 @@ dependencies {
     implementation(libs.lombok)
     annotationProcessor(libs.lombok)
 
+    implementation(libs.wheat)
+
     implementation(libs.jetbrains.annotations)
 
     // PeriodDuration
     implementation(libs.threeten.extra)
 
+    // Joiner, ImmutableSet
+    implementation(libs.guava)
+
     // Logging
     implementation(libs.slf4j.api)
     implementation(libs.micrometer.core)
-
-    // PeriodDuration
-    api(libs.threeten.extra)
-
-    // Pair
-    api(libs.commons.lang3)
 
     testImplementation(libs.testng)
 }

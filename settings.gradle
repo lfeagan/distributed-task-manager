@@ -7,6 +7,7 @@ include 'postgresql'
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        maven { url 'https://jitpack.io' }
     }
     versionCatalogs {
         libs {
@@ -17,6 +18,11 @@ dependencyResolutionManagement {
             // Project Lombok
             version('lombok', '1.18.22')
             library('lombok', 'org.projectlombok','lombok').versionRef('lombok')
+
+            // wheat
+//            version('wheat', 'main-SNAPSHOT')
+            version('wheat', '0.0.2')
+            library('wheat', 'com.github.lfeagan', 'wheat').versionRef('wheat')
 
             // Snake YAML for config files
             library('snakeyaml','org.yaml:snakeyaml:1.29')

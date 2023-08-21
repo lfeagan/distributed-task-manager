@@ -1,9 +1,5 @@
 before_install:
   - sdk install java 11.0.19-ms
   - sdk use java 11.0.19-ms
-  - sdk install gradle 8.2
-  - sdk use gradle 8.2
 # Jitpack and SDKMan Guide: https://dev.to/cicirello/how-to-configure-jitpack-for-recent-jdk-versions-4pek
 # https://jitpack.io/docs/BUILDING/
-install:
-  - gradle build publishToMavenLocal -x test

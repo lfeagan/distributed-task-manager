@@ -1,5 +1,6 @@
 package net.vectorcomputing.dtm.postgresql;
 
+import com.github.lfeagan.wheat.time.TimeUtils;
 import lombok.SneakyThrows;
 import net.vectorcomputing.dtm.*;
 import org.postgresql.ds.PGSimpleDataSource;
@@ -10,14 +11,13 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.threeten.extra.PeriodDuration;
 
 import javax.sql.DataSource;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -101,7 +101,7 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         private final String taskName;
         private final Duration bucket_interval;
 
-        private int acquiredCount = 0;
+        private AtomicInteger acquiredCount = new AtomicInteger();
 
         public SimulationTaskWorker(TaskManager taskManager, String taskName, Duration bucket_interval) {
             this.taskManager = taskManager;
@@ -112,51 +112,32 @@ public class PostgresqlTaskManagerSimulation extends TimescaleTestContainer {
         @Override
         @SneakyThrows
         public void run() {
-            Instant bucket_time = TimeUtils.alignWithInterval(Instant.now(), Instant.EPOCH, bucket_interval);
-            final TaskQuery availableWorkQuery = TaskQuery.builder()
-                    .name(taskName)
-                    .bucketStartTime(bucket_time.minus(72, ChronoUnit.HOURS)) // 3 day search window
-                    .statuses(ImmutableSet.of(TaskStatus.AVAILABLE))
+            TaskSpecification taskSpec = TaskSpecification.builder()
+                    .taskManager(taskManager)
+                    .taskName("simulation_task")
+                    .workerName("simulation_worker")
+                    .bucketInterval(bucket_interval)
+                    .backlogWindowSize(Duration.ofHours(72))
                     .build();
+
             try {
-                Task acquiredTask = taskManager.getAndAcquireFirstTask(availableWorkQuery);
-                if (acquiredTask == null) { // backlog query returned nothing
-                    // try to create for current bucket
-                    try {
-                        Task createdTask = taskManager.createTask(taskName, bucket_time, PeriodDuration.of(bucket_interval), "SimulationTaskWorker");
-                        if (createdTask != null) {
-                            LOGGER.info("created task {}", createdTask);
-                            createdTask.acquire("SimulationTaskWorker");
-                            acquiredTask = createdTask;
-                            LOGGER.info("acquired task {}", acquiredTask);
-                        }
-                    } catch (Exception e) {
-                        // do nothing
-                    }
-                } else {
-                    LOGGER.info("acquired task {} via backlog query", acquiredTask);
-                }
+                Task acquiredTask = taskSpec.findOrCreateAndAcquire();
 
                 if (acquiredTask != null) {
-                    // successfully acquired via backlog query or create-acquire sequence
-                    Assert.assertTrue(acquiredTask.isAcquired());
-                    try {
-                        LOGGER.info("processing acquired task: {}", acquiredTask);
-                        Thread.sleep(ThreadLocalRandom.current().nextInt(100));
-                        LOGGER.info("processed data");
-                        // send to kafka
-                        acquiredTask.completed("finished");
-                        LOGGER.info("finished task w/bucket time {} at {} ", acquiredTask.getBucketTime(), acquiredTask.getCompletedAt());
-                        ++acquiredCount;
-                    } catch (Exception e) {
-                        // do nothing
-                        LOGGER.error("something bad happened", e);
-                        acquiredTask.failed(e.getMessage());
-                    }
+                    taskSpec.process(acquiredTask,
+                            (t) -> {
+                                acquiredCount.getAndIncrement();
+                                try {
+                                    Thread.sleep(ThreadLocalRandom.current().nextInt(100));
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                return "finished"; },
+                            (t,e) -> { return e.getMessage();});
                 } else {
                     LOGGER.info("unable to acquire task");
                 }
-                if (acquiredCount > 10) {
+                if (acquiredCount.get() > 10) {
                     goodWorker.get().cancel(false);
                 }
             } catch (Exception e) {

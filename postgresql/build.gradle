@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':api')
+    implementation(libs.wheat)
     implementation(libs.lombok)
     annotationProcessor(libs.lombok)
 
@@ -15,9 +16,7 @@ dependencies {
     // PeriodDuration
     implementation(libs.threeten.extra)
 
-    // Pair
-    implementation(libs.commons.lang3)
-    // Joiner
+    // Joiner, ImmutableSet
     implementation(libs.guava)
 
     // Logging

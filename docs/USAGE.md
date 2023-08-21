@@ -1,9 +1,38 @@
-# Usage
+# Simplified Usage
 
+
+            TaskSpecification taskSpec = TaskSpecification.builder()
+                    .taskManager(taskManager)
+                    .taskName("simulation_task")
+                    .workerName("simulation_worker")
+                    .bucketInterval(bucket_interval)
+                    .backlogWindowSize(Duration.ofHours(72))
+                    .build();
+
+            try {
+                Task acquiredTask = taskSpec.findOrCreateAndAcquire();
+
+                if (acquiredTask != null) {
+                    taskSpec.process(acquiredTask,
+                            (t) -> {
+                                acquiredCount.getAndIncrement();
+                                try {
+                                    Thread.sleep(ThreadLocalRandom.current().nextInt(100));
+                                } catch (InterruptedException e) {
+                                    throw new RuntimeException(e);
+                                }
+                                return "finished"; },
+                            (t,e) -> { return e.getMessage();});
+                } else {
+                    LOGGER.info("unable to acquire task");
+                }
+
+
+# Advanced Usage
 The high-level steps to use DTC are:
 1. Decide on the name of the task. This name should be unique and help to identify the type of work being performed. For example, if the task is generating a report describing the health of sensors, a good name might be "sensor_health". If there were two sensor health jobs, one on a daily basis and another on an hourly basis, you may want to name them "sensor_health_daily" and "sensor_health_hourly", respectively.
 2. Decide on the size of the time window you want to contiguously fill the timeline with.
-3. Create an appropriate find, acquire, execute, commit function, as described below.
+3. Create an appropriate find-acquire, create-acquire, execute, commit function, as described below.
 
 As mentioned previously, DTC does not run your task. DTC helps your code determine what has been processed and what remains. Throughout the remained of this document, I will describe the combination of a start time and a time interval as a bucket. For example, if we are processing hourly chunks and the current time is 02:34:56Z, I would describe this as the 2 AM bucket. Buckets can be aligned to an interval other than 00:00:00, but for discussion purposes, hour-aligned buckets are easier to reason about. 
 
@@ -55,7 +84,8 @@ if (acquiredTask == null) { // backlog query returned nothing
 }
 ```
 
-At this point in the code, one of three things has happend:
+## Execute and Commit Task
+At this point in the code, one of three things has happened:
 1. An available task was acquired through a backlog query, or
 2. A new task was created and acquired, or
 3. No task has been acquired.
@@ -78,5 +108,3 @@ In scenario 3, we simply move on. Depending on your worker, this might mean you 
     }
 }
 ```
-
-
