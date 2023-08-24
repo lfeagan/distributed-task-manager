@@ -13,7 +13,7 @@ DTC operates purely as a library helping developers to find available work needi
 - [Design](docs/DESIGN.md)
 
 ## Download
-Latest version: 0.1.0
+Latest version: 0.1.1
 
 You can add this library into your Maven/Gradle/SBT/Leiningen project thanks to JitPack.io. Follow the instructions [here](https://jitpack.io/#lfeagan/distributed-task-manager).
 
@@ -29,7 +29,7 @@ allprojects {
 }
 
 dependencies {
-  implementation 'com.github.lfeagan:distributed-task-manager:0.1.0'
+  implementation 'com.github.lfeagan:distributed-task-coordinator:0.1.1'
 }
 ```
 
