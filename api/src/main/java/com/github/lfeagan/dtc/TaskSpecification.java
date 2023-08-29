@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm;
+package com.github.lfeagan.dtc;
 
 import com.github.lfeagan.wheat.time.TimeUtils;
 import com.google.common.collect.ImmutableSet;

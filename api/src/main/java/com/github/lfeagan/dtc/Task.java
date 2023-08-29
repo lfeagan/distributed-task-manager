@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm;
+package com.github.lfeagan.dtc;
 
 import org.threeten.extra.PeriodDuration;
 

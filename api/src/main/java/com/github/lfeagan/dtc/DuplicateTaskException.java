@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm;
+package com.github.lfeagan.dtc;
 
 public class DuplicateTaskException extends TaskManagerException {
     public DuplicateTaskException() {

@@ -1,8 +1,8 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
+import com.github.lfeagan.dtc.*;
 import com.github.lfeagan.wheat.time.TimeUtils;
 import lombok.SneakyThrows;
-import net.vectorcomputing.dtm.*;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

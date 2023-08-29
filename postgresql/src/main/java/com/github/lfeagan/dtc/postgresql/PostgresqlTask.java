@@ -1,10 +1,10 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
-import net.vectorcomputing.dtm.Task;
-import net.vectorcomputing.dtm.TaskStatus;
+import com.github.lfeagan.dtc.Task;
+import com.github.lfeagan.dtc.TaskStatus;
 import org.threeten.extra.PeriodDuration;
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.text.MessageFormat;
 import java.time.Instant;
 import java.util.Objects;
 
-import static net.vectorcomputing.dtm.postgresql.JdbcUtils.closeWithoutException;
+import static com.github.lfeagan.dtc.postgresql.JdbcUtils.closeWithoutException;
 
 @Data
 @Builder

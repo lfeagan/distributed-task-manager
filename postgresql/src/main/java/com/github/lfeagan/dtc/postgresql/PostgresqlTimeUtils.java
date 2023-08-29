@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
 import org.postgresql.util.PGInterval;
 import org.threeten.extra.PeriodDuration;

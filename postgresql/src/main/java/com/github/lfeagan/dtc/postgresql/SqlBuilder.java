@@ -1,10 +1,10 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
 import com.google.common.base.Joiner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import net.vectorcomputing.dtm.Task;
-import net.vectorcomputing.dtm.TaskQuery;
+import com.github.lfeagan.dtc.Task;
+import com.github.lfeagan.dtc.TaskQuery;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;

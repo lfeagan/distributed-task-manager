@@ -1,6 +1,6 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
-import net.vectorcomputing.dtm.*;
+import com.github.lfeagan.dtc.*;
 import org.postgresql.util.PGInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static net.vectorcomputing.dtm.postgresql.JdbcUtils.closeWithoutException;
+import static com.github.lfeagan.dtc.postgresql.JdbcUtils.closeWithoutException;
 
 public class PostgresqlTaskManager implements TaskManager {
 

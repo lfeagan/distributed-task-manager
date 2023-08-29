@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
 import eu.rekawek.toxiproxy.Proxy;
 import eu.rekawek.toxiproxy.ToxiproxyClient;
@@ -13,7 +13,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
-import static net.vectorcomputing.dtm.postgresql.ToxiproxyUtils.reflectivelyGetToxiproxyClient;
+import static com.github.lfeagan.dtc.postgresql.ToxiproxyUtils.reflectivelyGetToxiproxyClient;
 
 public class TimescaleTestContainer {
 

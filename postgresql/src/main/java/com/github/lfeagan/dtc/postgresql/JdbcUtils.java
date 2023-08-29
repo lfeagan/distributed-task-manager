@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

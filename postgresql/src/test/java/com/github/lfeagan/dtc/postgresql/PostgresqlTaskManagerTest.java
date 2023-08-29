@@ -1,7 +1,7 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
+import com.github.lfeagan.dtc.*;
 import com.github.lfeagan.wheat.time.TimeUtils;
-import net.vectorcomputing.dtm.*;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.testcontainers.shaded.com.google.common.collect.ImmutableSet;
 import org.testng.Assert;

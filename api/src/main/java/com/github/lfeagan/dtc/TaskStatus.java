@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm;
+package com.github.lfeagan.dtc;
 
 public enum TaskStatus {
     AVAILABLE, // The value assigned when a task is created, or it has failed.

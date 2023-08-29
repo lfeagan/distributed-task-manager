@@ -1,4 +1,4 @@
-package net.vectorcomputing.dtm;
+package com.github.lfeagan.dtc;
 
 import lombok.Builder;
 import lombok.Data;

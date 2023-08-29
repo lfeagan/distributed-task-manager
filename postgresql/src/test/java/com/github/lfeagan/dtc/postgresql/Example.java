@@ -1,8 +1,8 @@
-package net.vectorcomputing.dtm.postgresql;
+package com.github.lfeagan.dtc.postgresql;
 
-import net.vectorcomputing.dtm.Task;
-import net.vectorcomputing.dtm.TaskManagerException;
-import net.vectorcomputing.dtm.TaskSpecification;
+import com.github.lfeagan.dtc.Task;
+import com.github.lfeagan.dtc.TaskManagerException;
+import com.github.lfeagan.dtc.TaskSpecification;
 import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
