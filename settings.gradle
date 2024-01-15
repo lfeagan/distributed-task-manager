@@ -37,7 +37,7 @@ dependencyResolutionManagement {
             library('guava', 'com.google.guava:guava:32.1.3-jre')
 
             // SLF4J & Loggging
-            library('slf4j-api', 'org.slf4j:slf4j-api:2.0.9')
+            library('slf4j-api', 'org.slf4j:slf4j-api:2.0.11')
             library('logback-classic', 'ch.qos.logback:logback-classic:1.4.11')
             // Janino (for Logback conditional processing)
             library('janino', 'org.codehaus.janino:janino:3.1.11')
